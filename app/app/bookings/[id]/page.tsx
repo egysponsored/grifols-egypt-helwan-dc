@@ -6,7 +6,6 @@ import { auth, db } from "@/lib/firebaseClient";
 import { getMyProfile } from "@/lib/auth";
 import type { Booking, UserProfile } from "@/lib/types";
 import { Card } from "@/components/Card";
-import QRCode from "qrcode";
 import { doc, onSnapshot } from "firebase/firestore";
 
 export default function BookingDetailsPage() {
@@ -28,8 +27,13 @@ export default function BookingDetailsPage() {
         const b = { id: snap.id, ...(snap.data() as any) } as Booking;
         setBooking(b);
         const payloadStr = JSON.stringify(b.qrPayload);
-        const url = await QRCode.toDataURL(payloadStr, { margin: 1, scale: 8 });
-        setQrDataUrl(url);
+
+// ✅ Dynamic import to avoid TS types issue on build
+const QRCode = (await import("qrcode")).default;
+
+const url = await QRCode.toDataURL(payloadStr, { margin: 1, scale: 8 });
+setQrDataUrl(url);
+
       });
 
       return () => unsub();
