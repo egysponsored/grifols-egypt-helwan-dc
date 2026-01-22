@@ -1,0 +1,28 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function signedIn() { return request.auth != null; }
+    function role() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role;
+    }
+    function isAdmin() { return signedIn() && role() == "SystemAdmin"; }
+    function isManager() { return signedIn() && (role() == "SystemAdmin" || role() == "BranchManager"); }
+
+    match /donor_id_cards/{uid}/{fileName} {
+      // Awareness uploads own path; managers can read too
+      allow read: if isManager() || (signedIn() && request.auth.uid == uid);
+      allow write: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /employee_documents/{empUid}/{fileName} {
+      allow read: if isManager() || (signedIn() && request.auth.uid == empUid);
+      allow write: if isManager();
+    }
+
+    match /employee_photos/{uid}/{fileName} {
+      allow read: if signedIn();
+      allow write: if signedIn() && request.auth.uid == uid;
+    }
+  }
+}

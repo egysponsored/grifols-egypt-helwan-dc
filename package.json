@@ -1,0 +1,40 @@
+{
+  "name": "grifols-egypt-helwan-dc",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "seed": "node scripts/seed.js",
+    "set-claims": "node scripts/setClaims.js"
+  },
+  "dependencies": {
+    "@capacitor/cli": "^7.4.5",
+    "@capacitor/core": "^8.0.1",
+    "cloudinary": "^2.5.1",
+    "firebase": "^10.13.0",
+    "firebase-admin": "^12.3.1",
+    "html5-qrcode": "^2.3.8",
+    "lucide-react": "^0.454.0",
+    "next": "14.2.35",
+    "qrcode": "^1.5.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "xlsx": "^0.18.5",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "14.2.35",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.14",
+    "typescript": "^5.6.3"
+  }
+}

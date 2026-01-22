@@ -1,0 +1,96 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+
+    function role() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() { return signedIn() && role() == "SystemAdmin"; }
+    function isManager() { return signedIn() && (role() == "SystemAdmin" || role() == "BranchManager"); }
+    function isAwareness() { return signedIn() && role() == "AwarenessEmployee"; }
+
+    match /users/{uid} {
+      allow read: if signedIn();
+      // Only SystemAdmin can create/update employee base data.
+      allow create, delete: if isAdmin();
+      // Employee can update photoURL only.
+      allow update: if (isAdmin()) ||
+        (signedIn() && request.auth.uid == uid
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(["photoURL"]));
+    }
+
+    match /donors/{donorId} {
+      allow create: if signedIn() && (
+        (isManager()) ||
+        (isAwareness()
+          && request.resource.data.awarenessEmployeeId == request.auth.uid
+          && request.resource.data.keys().hasOnly([
+              "fullName","idCardImageUrl","awarenessEmployeeId","awarenessEmployeeName","awarenessEmployeeCode",
+              "donationNumber","createdAt","status","arrivedAt"
+            ])
+        )
+      );
+
+      allow read: if isManager() || (signedIn() && resource.data.awarenessEmployeeId == request.auth.uid);
+
+      // Only managers can update donor status continuously.
+      allow update: if isManager();
+
+      allow delete: if isAdmin();
+    }
+
+    match /donor_status_history/{id} {
+      allow create: if signedIn() && isManager();
+      allow read: if isManager() || (signedIn() && resource.data.changedByUid == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    match /deferral_reasons/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin(); // seed + manage reasons
+    }
+
+    match /donor_deferrals/{id} {
+      allow create: if signedIn() && isManager();
+      allow read: if isManager() || (signedIn() && get(/databases/$(database)/documents/donors/$(resource.data.donorId)).data.awarenessEmployeeId == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    match /educationMaterials/{id} {
+      allow read: if signedIn();
+      allow write: if isManager();
+    }
+
+    match /notifications/{id} {
+      allow read: if isManager(); // managers view notifications
+      allow create: if signedIn(); // donor registration creates notification
+      allow update, delete: if isAdmin();
+    }
+
+    match /attendance/{id} {
+      allow create: if signedIn();
+      allow read: if isManager() || (signedIn() && resource.data.employeeId == request.auth.uid);
+      allow update: if isManager() || (signedIn() && resource.data.employeeId == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
+    match /employees_documents/{id} {
+      allow create: if isManager();
+      allow read: if isManager() || (signedIn() && resource.data.employeeId == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    match /bookings/{id} {
+      allow read: if isManager() || (signedIn() && resource.data.createdByUid == request.auth.uid);
+      allow create: if signedIn(); // further validation happens in UI; managers oversee.
+      allow update, delete: if isAdmin();
+    }
+
+    match /counters/{id} {
+      allow read, write: if isManager(); // booking number allocation
+    }
+  }
+}
